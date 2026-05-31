@@ -64,10 +64,7 @@ impl PermSpec {
 
         let mut fields = trimmed.split_ascii_whitespace();
 
-        let path = fields
-            .next()
-            .ok_or("missing path field")?
-            .to_owned();
+        let path = fields.next().ok_or("missing path field")?.to_owned();
 
         let raw_uidgid = fields
             .next()
@@ -83,7 +80,13 @@ impl PermSpec {
         let file_mode = parse_mode(file_mode_str)?;
         let dir_mode = parse_mode(dir_mode_str)?;
 
-        Ok(Some(PermSpec { path, uid, gid, file_mode, dir_mode }))
+        Ok(Some(PermSpec {
+            path,
+            uid,
+            gid,
+            file_mode,
+            dir_mode,
+        }))
     }
 }
 
@@ -115,8 +118,7 @@ fn parse_mode(s: &str) -> Result<Mode> {
     let bits: u32 = if stripped.is_empty() {
         0
     } else {
-        u32::from_str_radix(stripped, 8)
-            .map_err(|e| format!("invalid mode '{s}': {e}"))?
+        u32::from_str_radix(stripped, 8).map_err(|e| format!("invalid mode '{s}': {e}"))?
     };
     // `mode_t` is u16 on macOS and u32 on Linux; `as _` lets the compiler pick the right width.
     // Valid permission bits (≤ 0o7777 = 4095) fit safely in either type.
@@ -132,9 +134,7 @@ fn parse_env_u32(name: &str) -> u32 {
     match std::env::var(name) {
         Err(_) => 0, // variable not set — use default
         Ok(v) => v.parse().unwrap_or_else(|_| {
-            eprintln!(
-                "fix-perms: warning: {name}={v:?} is not a valid integer; defaulting to 0"
-            );
+            eprintln!("fix-perms: warning: {name}={v:?} is not a valid integer; defaulting to 0");
             0
         }),
     }
@@ -148,7 +148,10 @@ fn parse_env_u32(name: &str) -> u32 {
 fn apply_spec(spec: &PermSpec) -> Result<()> {
     let root = Path::new(&spec.path);
     if !root.exists() {
-        eprintln!("fix-perms: info: skipping '{}': path does not exist", root.display());
+        eprintln!(
+            "fix-perms: info: skipping '{}': path does not exist",
+            root.display()
+        );
         return Ok(());
     }
 
@@ -201,7 +204,11 @@ fn apply_spec(spec: &PermSpec) -> Result<()> {
 
         // ── 2. chmod according to entry type ──────────────────────────────
         let is_dir = metadata.is_dir();
-        let target_mode = if is_dir { spec.dir_mode } else { spec.file_mode };
+        let target_mode = if is_dir {
+            spec.dir_mode
+        } else {
+            spec.file_mode
+        };
         // Compare only the permission bits (mask out file-type bits).
         // chown(2) does not modify mode bits, so cached metadata is still valid here.
         let current_perm_bits = metadata.mode() & 0o7777;
@@ -244,7 +251,10 @@ fn main() {
         let line = match line {
             Ok(l) => l,
             Err(err) => {
-                eprintln!("fix-perms: error reading stdin at line {}: {err}", lineno + 1);
+                eprintln!(
+                    "fix-perms: error reading stdin at line {}: {err}",
+                    lineno + 1
+                );
                 had_error = true;
                 break;
             }
@@ -336,7 +346,9 @@ mod tests {
 
     #[test]
     fn test_spec_comment_returns_none() {
-        assert!(PermSpec::parse("# this is a comment", 0, 0).unwrap().is_none());
+        assert!(PermSpec::parse("# this is a comment", 0, 0)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -353,10 +365,13 @@ mod tests {
 
     #[test]
     fn test_spec_dynamic_uid_gid_substitution() {
-        let spec =
-            PermSpec::parse("/data {{USERMAP_UID}}:{{USERMAP_GID}} 0644 0755", 1000, 2000)
-                .unwrap()
-                .unwrap();
+        let spec = PermSpec::parse(
+            "/data {{USERMAP_UID}}:{{USERMAP_GID}} 0644 0755",
+            1000,
+            2000,
+        )
+        .unwrap()
+        .unwrap();
         assert_eq!(spec.uid, 1000);
         assert_eq!(spec.gid, 2000);
     }
