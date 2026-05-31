@@ -1,0 +1,16 @@
+[package]
+name = "fix-perms"
+description = "High-performance permission fixer for ignity containers"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "fix-perms"
+path = "src/main.rs"
+
+[dependencies]
+walkdir = "2"
+nix = { version = "0.31.3", features = ["fs", "user"] }

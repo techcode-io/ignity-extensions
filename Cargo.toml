@@ -1,0 +1,16 @@
+[workspace]
+members = ["crates/fix-perms"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["techcode-io"]
+license = "MIT"
+repository = "https://github.com/techcode-io/ignity-extensions"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

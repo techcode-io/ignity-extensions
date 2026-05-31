@@ -1,0 +1,17 @@
+---
+name: ignity-extensions
+version: ${VERSION}
+arch: amd64
+platform: linux
+maintainer: techcode-io <noreply@techcode.io>
+description: |
+  High-performance extensions for ignity containers.
+  Includes: fix-perms
+license: MIT
+homepage: https://github.com/techcode-io/ignity-extensions
+
+contents:
+  - src: target/x86_64-unknown-linux-musl/release/fix-perms
+    dst: /usr/local/bin/fix-perms
+    file_info:
+      mode: 0755
