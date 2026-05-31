@@ -19,7 +19,7 @@ env:
   # 0.0.0-dev for branch builds so nfpm always has a valid version string.
   VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.0.0-dev' }}
   # Bump this when a new nfpm release is available.
-  NFPM_VERSION: "2.41.4"
+  NFPM_VERSION: "2.46.3"
 
 jobs:
   test:
