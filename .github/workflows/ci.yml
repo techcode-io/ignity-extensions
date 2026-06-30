@@ -108,6 +108,9 @@ jobs:
           sudo dpkg -i /tmp/nfpm.deb
           rm /tmp/nfpm.deb
 
+      - name: Create dist directory
+        run: mkdir -p dist
+
       - name: Build .deb package
         run: nfpm package --config nfpm.yaml --packager deb --target dist
         env:
