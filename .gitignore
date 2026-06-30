@@ -1,5 +1,6 @@
 
 .idea
+.cargo/
 /target/
 /dist/
 # Default output name when rustc is invoked directly without -o
