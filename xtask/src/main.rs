@@ -46,7 +46,7 @@ fn run_nfpm(packager: &str, version: &str) {
         .arg("dist")
         .env("VERSION", version)
         .output()
-        .expect(&format!("Failed to run nfpm for {}", packager));
+        .unwrap_or_else(|_| panic!("Failed to run nfpm for {}", packager));
 
     if !output.status.success() {
         eprintln!(
