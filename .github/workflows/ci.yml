@@ -83,6 +83,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Install Rust stable
+        run: rustup toolchain install stable
+
       - name: Download binary artifact
         uses: actions/download-artifact@v7
         with:
