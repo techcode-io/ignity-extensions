@@ -147,6 +147,13 @@ fn parse_env_u32(name: &str) -> u32 {
 /// Apply the permission spec to all entries under `spec.path`.
 fn apply_spec(spec: &PermSpec) -> Result<()> {
     let root = Path::new(&spec.path);
+    if root.is_symlink() {
+        eprintln!(
+            "fix-perms: info: skipping '{}': path is a symlink",
+            root.display()
+        );
+        return Ok(());
+    }
     if !root.exists() {
         eprintln!(
             "fix-perms: info: skipping '{}': path does not exist",
