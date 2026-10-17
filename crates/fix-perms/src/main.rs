@@ -396,4 +396,38 @@ mod tests {
     fn test_spec_missing_dmode() {
         assert!(PermSpec::parse("/tmp 0:0 0600", 0, 0).is_err());
     }
+
+    // ── apply_spec ──────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_apply_spec_skips_symlinked_root() {
+        let base = std::env::temp_dir().join(format!("fix-perms-symlink-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let real = base.join("real");
+        std::fs::create_dir_all(&real).unwrap();
+        let file = real.join("file");
+        std::fs::write(&file, b"x").unwrap();
+        std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o600)).unwrap();
+        std::fs::set_permissions(&real, std::fs::Permissions::from_mode(0o700)).unwrap();
+
+        let link = base.join("link");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+
+        let meta = std::fs::metadata(&file).unwrap();
+        let spec = PermSpec {
+            path: link.to_string_lossy().into_owned(),
+            uid: meta.uid(),
+            gid: meta.gid(),
+            file_mode: Mode::from_bits(0o644).unwrap(),
+            dir_mode: Mode::from_bits(0o755).unwrap(),
+        };
+        apply_spec(&spec).unwrap();
+
+        let file_mode = std::fs::metadata(&file).unwrap().permissions().mode() & 0o777;
+        let dir_mode = std::fs::metadata(&real).unwrap().permissions().mode() & 0o777;
+        let _ = std::fs::remove_dir_all(&base);
+
+        assert_eq!(file_mode, 0o600, "target file must not be touched");
+        assert_eq!(dir_mode, 0o700, "target dir must not be touched");
+    }
 }
