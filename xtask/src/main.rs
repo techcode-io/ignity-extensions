@@ -155,6 +155,10 @@ fn release_post() {
 }
 
 fn bump_version_pr(branch: &str, version: &str, message: &str) {
+    if project_version() == version {
+        fail(&format!("The project version is already `{}`.", version));
+    }
+
     run("git", &["checkout", "-b", branch]);
 
     set_version(version);
