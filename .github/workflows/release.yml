@@ -1,4 +1,5 @@
 ---
+# Manually dispatched release workflow.
 name: Release
 
 on:
