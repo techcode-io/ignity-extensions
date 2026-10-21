@@ -2,24 +2,26 @@
 name: CI
 
 on:
+  workflow_call: ~
   pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
-    tags:
-      - "v*"
 
-# contents: read covers all jobs.  A future release-publishing job will need
-# contents: write — set it at the job level there rather than widening here.
 permissions:
   contents: read
 
 env:
-  # Derived from the tag (v1.2.3 → 1.2.3) on tag pushes; falls back to
-  # 0.0.0-dev for branch builds so nfpm always has a valid version string.
-  VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '0.0.0-dev' }}
   # Bump this when a new nfpm release is available.
   NFPM_VERSION: "2.46.3"
+
+## Concurrency only allowed in the main branch.
+## So old builds running for old commits within the same Pull Request are cancelled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   test:
@@ -27,20 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v6
+      - name: Install environment
+        uses: ./.github/workflows/env-install
         with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+          components: rustfmt, clippy
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -52,73 +44,127 @@ jobs:
         run: cargo test --all
 
   build:
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - test
+    strategy:
+      matrix:
+        os:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            arch: arm64
+    runs-on: ${{ matrix.os.runner }}
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Rust stable + musl target
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install environment
+        uses: ./.github/workflows/env-install
         with:
-          targets: x86_64-unknown-linux-musl
+          targets: ${{ matrix.os.target }}
 
       - name: Install musl tools
         run: sudo apt-get install -y musl-tools
 
       - name: Build static release binary
-        run: cargo build --release --target x86_64-unknown-linux-musl
+        run: cargo build --release --target ${{ matrix.os.target }}
 
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7
         with:
-          name: fix-perms-x86_64-musl
-          path: target/x86_64-unknown-linux-musl/release/fix-perms
+          name: fix-perms-${{ matrix.os.arch }}
+          path: target/${{ matrix.os.target }}/release/fix-perms
           if-no-files-found: error
 
   package:
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    needs:
+      - build
+    strategy:
+      matrix:
+        os:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            arch: arm64
+    runs-on: ${{ matrix.os.runner }}
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Rust stable
-        run: rustup toolchain install stable
+      - name: Install environment
+        uses: ./.github/workflows/env-install
 
-      - name: Download binary artifact
-        uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@v8
         with:
-          name: fix-perms-x86_64-musl
-          path: target/x86_64-unknown-linux-musl/release/
+          name: fix-perms-${{ matrix.os.arch }}
+          path: target/${{ matrix.os.target }}/release/
 
       - name: Restore binary permissions
-        run: chmod +x target/x86_64-unknown-linux-musl/release/fix-perms
-
-      - name: Derive package version
-        id: version
-        run: |
-          # Strip the leading 'v' from tag names (v1.2.3 → 1.2.3).
-          # Both dpkg and rpm reject version strings that start with 'v'.
-          ref="${GITHUB_REF_NAME}"
-          echo "value=${ref#v}" >> "$GITHUB_OUTPUT"
+        run: chmod +x target/${{ matrix.os.target }}/release/fix-perms
 
       - name: Install nfpm
         run: |
           curl -fsSL \
-            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_amd64.deb" \
+            "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_$(dpkg --print-architecture).deb" \
             -o /tmp/nfpm.deb
           sudo dpkg -i /tmp/nfpm.deb
           rm /tmp/nfpm.deb
 
       - name: Build packages
-        run: cargo xtask build
-        env:
-          VERSION: ${{ steps.version.outputs.value }}
+        run: cargo xtask build --target ${{ matrix.os.target }}
 
-      - name: Upload packages
-        uses: actions/upload-artifact@v7
+      - uses: actions/attest@v4
         with:
-          name: ignity-extensions-packages
-          path: dist/
+          subject-path: "dist/*"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ignity-extensions-packages-${{ matrix.os.arch }}
+          path: "dist/*"
           if-no-files-found: error
+
+  sanitize:
+    needs:
+      - package
+    strategy:
+      matrix:
+        os:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.os.runner }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ignity-extensions-packages-${{ matrix.os.arch }}
+          path: dist
+
+      - name: Prepare smoke test
+        run: |
+          mkdir -p /tmp/smoke/dir
+          touch /tmp/smoke/dir/file
+          echo "/tmp/smoke $(id -u):$(id -g) 0600 0700" > /tmp/smoke.spec
+
+      - name: Verify deb install
+        run: |
+          sudo dpkg -i dist/ignity-extensions_*.deb
+          fix-perms < /tmp/smoke.spec
+          test "$(stat -c %a /tmp/smoke/dir)" = "700"
+          test "$(stat -c %a /tmp/smoke/dir/file)" = "600"
+          sudo dpkg -r ignity-extensions
+
+      - name: Verify rpm install
+        run: |
+          sudo apt-get install -qy rpm
+          sudo rpm -i --nodeps dist/ignity-extensions-*.rpm
+          chmod -R 0777 /tmp/smoke
+          fix-perms < /tmp/smoke.spec
+          test "$(stat -c %a /tmp/smoke/dir)" = "700"
+          test "$(stat -c %a /tmp/smoke/dir/file)" = "600"
