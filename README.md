@@ -81,6 +81,17 @@ cargo build --release --target x86_64-unknown-linux-musl
 ```
 
 - The binary at `target/x86_64-unknown-linux-musl/release/fix-perms` has zero runtime dependencies.
+- Use `aarch64-unknown-linux-musl` as target to build for `arm64`.
+
+### Package
+
+- To build `.deb` and `.rpm` packages from a static binary, you need [nfpm](https://nfpm.goreleaser.com/).
+
+```bash
+cargo xtask build --target x86_64-unknown-linux-musl
+```
+
+- It will create packages in `dist/` with the version defined in `Cargo.toml`.
 
 ## 📖 Usage
 
@@ -142,15 +153,13 @@ path account fmode dmode
 
 ### How to create a versioned release
 
-- To release a new version, create and push a tag.
-
-```bash
-git tag v0.1.0
-git push --tags
-```
-
-- The CI pipeline derives the package version from the tag (`v0.1.0` → `1.0.0`).
-- It will build the static binary, then produce a `.deb` and `.rpm` package uploaded as CI artifacts.
+- The version lives in the root `Cargo.toml` (`[workspace.package] version`) and is used for the packages.
+- Run the `Pre release` workflow with the version to release (e.g. `0.2.0`).
+- It opens a PR bumping `Cargo.toml` and `Cargo.lock`, merge it.
+- Run the `Release` workflow with the next iteration version (e.g. `0.3.0-dev`).
+- It runs the CI, creates the `v0.2.0` tag and a GitHub release with `.deb` and `.rpm` packages for `amd64` and `arm64`.
+- It then opens a PR bumping the version to the next iteration, merge it.
+- The release steps are also available locally through `cargo xtask release:pre`, `cargo xtask release` and `cargo xtask release:post`.
 
 ### How to add a new extension
 
@@ -170,7 +179,7 @@ members = ["crates/fix-perms", "crates/<name>"]
 
 ```yaml
 contents:
-  - src: target/x86_64-unknown-linux-musl/release/<name>
+  - src: target/${TARGET}/release/<name>
     dst: /usr/local/bin/<name>
     file_info:
       mode: 0755

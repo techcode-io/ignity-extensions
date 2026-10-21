@@ -1,7 +1,7 @@
 ---
 name: ignity-extensions
 version: ${VERSION}
-arch: amd64
+arch: ${ARCH}
 platform: linux
 maintainer: techcode-io <noreply@techcode.io>
 description: |
@@ -11,7 +11,7 @@ license: MIT
 homepage: https://github.com/techcode-io/ignity-extensions
 
 contents:
-  - src: target/x86_64-unknown-linux-musl/release/fix-perms
+  - src: target/${TARGET}/release/fix-perms
     dst: /usr/local/bin/fix-perms
     file_info:
       mode: 0755

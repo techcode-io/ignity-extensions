@@ -1,0 +1,38 @@
+---
+name: Pre release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version to release (e.g. 1.2.3). This workflow will automatically perform the required version bumps"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  pre-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup github actions bot
+        uses: ./.github/workflows/setup-github-bot
+
+      - name: Install environment
+        uses: ./.github/workflows/env-install
+
+      - name: Run pre-release step
+        run: cargo xtask release:pre
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}

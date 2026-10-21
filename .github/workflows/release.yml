@@ -1,0 +1,72 @@
+---
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The next iteration version (e.g. 1.2.4-dev). This workflow will automatically perform the required version bumps"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  ci:
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - ci
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ignity-extensions-packages-*
+          merge-multiple: true
+          path: dist
+
+      - name: Install environment
+        uses: ./.github/workflows/env-install
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: cargo xtask release
+
+  post-release:
+    needs:
+      - release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup github actions bot
+        uses: ./.github/workflows/setup-github-bot
+
+      - name: Install environment
+        uses: ./.github/workflows/env-install
+
+      - name: Run post-release step
+        run: cargo xtask release:post
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT_VERSION: ${{ inputs.version }}
