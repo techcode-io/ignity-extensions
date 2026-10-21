@@ -1,17 +1,17 @@
-<h1 align="center">ignity-extensions</h1>
+<h1 align="center">ignity-utils-rs</h1>
 
 <p align="center">
-  <i align="center">High-performance extensions for ignity containers.</i>
+  <i align="center">High-performance Rust drop-in replacements for ignity-utils.</i>
   <br>
   <i align="center">Statically compiled Rust binaries that replace performance-sensitive execlineb scripts.</i>
 </p>
 
 <h4 align="center">
-  <a href="https://github.com/techcode-io/ignity-extensions/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/techcode-io/ignity-extensions/ci.yml?branch=main&label=ci&style=flat-square" alt="continuous integration" style="height: 20px;">
+  <a href="https://github.com/techcode-io/ignity-utils-rs/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/techcode-io/ignity-utils-rs/ci.yml?branch=main&label=ci&style=flat-square" alt="continuous integration" style="height: 20px;">
   </a>
-  <a href="https://github.com/techcode-io/ignity-extensions/graphs/contributors">
-    <img src="https://img.shields.io/github/contributors-anon/techcode-io/ignity-extensions?color=yellow&style=flat-square" alt="contributors" style="height: 20px;">
+  <a href="https://github.com/techcode-io/ignity-utils-rs/graphs/contributors">
+    <img src="https://img.shields.io/github/contributors-anon/techcode-io/ignity-utils-rs?color=yellow&style=flat-square" alt="contributors" style="height: 20px;">
   </a>
   <a href="https://opensource.org/licenses/MIT">
     <img src="https://img.shields.io/badge/MIT-blue.svg?style=flat-square&label=license" alt="license" style="height: 20px;">
@@ -19,8 +19,8 @@
   <br>
 </h4>
 
-- [Source](https://github.com/techcode-io/ignity-extensions)
-- [Issues](https://github.com/techcode-io/ignity-extensions/issues)
+- [Source](https://github.com/techcode-io/ignity-utils-rs)
+- [Issues](https://github.com/techcode-io/ignity-utils-rs/issues)
 - [Contact](mailto:adrien.mannocci@gmail.com)
 - [Maintained by techcode.io](https://techcode.io)
 
@@ -34,13 +34,13 @@
 - Fully static binaries — run on any Linux (glibc, musl/Alpine, distroless, scratch)
 - Zero process-spawn overhead — all operations are in-process syscalls
 - Drop-in replacements for the original execlineb scripts
-- Single package containing all extensions (`.deb` and `.rpm`)
+- Single package replacing `ignity-utils` (`.deb` and `.rpm`)
 
 ## :dart: Motivation
 
 - ignity's built-in scripts fork `find`, `xargs`, `chown`, and `chmod` for every path spec.
 - This overhead compounds on large container image trees with many files.
-- Rust extensions perform the same work with a single directory traversal and direct syscalls.
+- Rust utils perform the same work with a single directory traversal and direct syscalls.
 
 ## :hammer: Workflow
 
@@ -48,8 +48,8 @@
 
 The following steps will ensure your project is cloned properly.
 
-1. `git clone https://github.com/techcode-io/ignity-extensions`
-2. `cd ignity-extensions`
+1. `git clone https://github.com/techcode-io/ignity-utils-rs`
+2. `cd ignity-utils-rs`
 
 ### Test
 
@@ -95,7 +95,7 @@ cargo xtask build --target x86_64-unknown-linux-musl
 
 ## 📖 Usage
 
-### Available extensions
+### Available utils
 
 | Crate | Replaces | Purpose |
 | ----- | -------- | ------- |
@@ -103,12 +103,12 @@ cargo xtask build --target x86_64-unknown-linux-musl
 
 ### How it works
 
-- Extensions are statically compiled Rust binaries.
+- Utils are statically compiled Rust binaries.
 - They are drop-in replacements: same stdin format, same environment variables, same exit codes.
 - During ignity's Stage 2, every file under `/etc/ignity/perms/` is concatenated and piped to `fix-perms`.
 - The Rust binary replaces the original execlineb script that forked `find | xargs chown` and `find | xargs chmod` per path.
 
-### How to integrate ignity-extensions in your project
+### How to integrate ignity-utils-rs in your project
 
 - You can copy the static binary directly into your image at the path ignity expects.
 
@@ -119,9 +119,12 @@ COPY --from=build /usr/local/bin/fix-perms /usr/bin/fix-perms
 - Or install the `.deb` / `.rpm` package during your image build.
 
 ```Dockerfile
-COPY ignity-extensions_*.deb /tmp/
-RUN dpkg -i /tmp/ignity-extensions_*.deb && rm /tmp/ignity-extensions_*.deb
+COPY ignity-utils-rs_*.deb /tmp/
+RUN dpkg -i /tmp/ignity-utils-rs_*.deb && rm /tmp/ignity-utils-rs_*.deb
 ```
+
+- The `ignity-utils-rs` package replaces ignity's execline `ignity-utils` package.
+- Both provide the virtual `ignity-utils-impl` that `ignity-core` depends on, so installing `ignity-utils-rs` removes `ignity-utils` and installs at the same paths.
 
 ### How to fix ownership & permissions
 
@@ -161,7 +164,7 @@ path account fmode dmode
 - It then opens a PR bumping the version to the next iteration, merge it.
 - The release steps are also available locally through `cargo xtask release:pre`, `cargo xtask release` and `cargo xtask release:post`.
 
-### How to add a new extension
+### How to add a new util
 
 - Create a new crate under `crates/`.
 
@@ -180,7 +183,7 @@ members = ["crates/fix-perms", "crates/<name>"]
 ```yaml
 contents:
   - src: target/${TARGET}/release/<name>
-    dst: /usr/local/bin/<name>
+    dst: /usr/bin/<name>
     file_info:
       mode: 0755
 ```
@@ -195,9 +198,9 @@ notifications about new versions, and give it a :star2: **GitHub Star**!
 
 You can also contribute by:
 
-- Sending a [Pull Request](https://github.com/techcode-io/ignity-extensions/pulls) with your awesome new features and bug fixes.
-- Be part of the community and help resolve [Issues](https://github.com/techcode-io/ignity-extensions/issues).
+- Sending a [Pull Request](https://github.com/techcode-io/ignity-utils-rs/pulls) with your awesome new features and bug fixes.
+- Be part of the community and help resolve [Issues](https://github.com/techcode-io/ignity-utils-rs/issues).
 
 ## 🧾 License
 
-The `ignity-extensions` project is free and open-source software licensed under the MIT license.
+The `ignity-utils-rs` project is free and open-source software licensed under the MIT license.

@@ -36,7 +36,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          pattern: ignity-extensions-packages-*
+          pattern: ignity-utils-rs-packages-*
           merge-multiple: true
           path: dist
 

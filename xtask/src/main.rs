@@ -103,7 +103,7 @@ fn release_pre() {
     bump_version_pr(
         &branch,
         &version,
-        &format!("release: ignity-extensions v{}", version),
+        &format!("release: ignity-utils-rs v{}", version),
     );
 }
 
@@ -128,7 +128,7 @@ fn release() {
         fail("No packages found in `dist`.");
     }
 
-    let title = format!("ignity-extensions {}", tag);
+    let title = format!("ignity-utils-rs {}", tag);
     let mut args = vec![
         "release",
         "create",
@@ -219,7 +219,7 @@ fn run_status(cmd: &str, args: &[&str]) -> bool {
 
 fn is_package(path: &Path) -> bool {
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-    name.starts_with("ignity-extensions") && (name.ends_with(".deb") || name.ends_with(".rpm"))
+    name.starts_with("ignity-utils-rs") && (name.ends_with(".deb") || name.ends_with(".rpm"))
 }
 
 fn target_arch(target: &str) -> Option<&'static str> {
@@ -350,10 +350,10 @@ license = "MIT"
     #[test]
     fn detects_packages() {
         assert!(is_package(Path::new(
-            "dist/ignity-extensions_0.1.0_amd64.deb"
+            "dist/ignity-utils-rs_0.1.0_amd64.deb"
         )));
         assert!(is_package(Path::new(
-            "dist/ignity-extensions-0.1.0-1.aarch64.rpm"
+            "dist/ignity-utils-rs-0.1.0-1.aarch64.rpm"
         )));
         assert!(!is_package(Path::new("dist/fix-perms")));
     }

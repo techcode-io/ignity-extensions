@@ -1,17 +1,26 @@
 ---
-name: ignity-extensions
+name: ignity-utils-rs
 version: ${VERSION}
 arch: ${ARCH}
 platform: linux
 maintainer: techcode-io <noreply@techcode.io>
 description: |
-  High-performance extensions for ignity containers.
+  High-performance Rust drop-in replacements for ignity-utils.
   Includes: fix-perms
 license: MIT
-homepage: https://github.com/techcode-io/ignity-extensions
+homepage: https://github.com/techcode-io/ignity-utils-rs
+
+# Swap in for the execline ignity-utils package: ignity-core depends on the
+# virtual ignity-utils-impl, which either package satisfies.
+provides:
+  - ignity-utils-impl
+conflicts:
+  - ignity-utils
+replaces:
+  - ignity-utils
 
 contents:
   - src: target/${TARGET}/release/fix-perms
-    dst: /usr/local/bin/fix-perms
+    dst: /usr/bin/fix-perms
     file_info:
       mode: 0755
