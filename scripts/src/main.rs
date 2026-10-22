@@ -29,7 +29,7 @@ fn build_packages(args: &[String]) {
     let target = match args {
         [] => DEFAULT_TARGET.to_string(),
         [flag, value] if flag == "--target" => value.clone(),
-        _ => fail("Usage: cargo xtask build [--target <triple>]"),
+        _ => fail("Usage: cargo scripts build [--target <triple>]"),
     };
     let arch =
         target_arch(&target).unwrap_or_else(|| fail(&format!("Unsupported target: {}", target)));
@@ -280,7 +280,7 @@ mod tests {
     use super::*;
 
     const MANIFEST: &str = r#"[workspace]
-members = ["crates/fix-perms", "xtask"]
+members = ["crates/fix-perms", "scripts"]
 
 [workspace.dependencies]
 version = "9.9.9"

@@ -33,7 +33,7 @@ jobs:
         uses: ./.github/workflows/env-install
 
       - name: Run pre-release step
-        run: cargo xtask release:pre
+        run: cargo scripts release:pre
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ inputs.version }}

@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/fix-perms", "xtask"]
+members = ["crates/fix-perms", "scripts"]
 resolver = "2"
 
 [workspace.package]

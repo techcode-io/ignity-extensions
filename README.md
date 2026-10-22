@@ -88,7 +88,7 @@ cargo build --release --target x86_64-unknown-linux-musl
 - To build `.deb` and `.rpm` packages from a static binary, you need [nfpm](https://nfpm.goreleaser.com/).
 
 ```bash
-cargo xtask build --target x86_64-unknown-linux-musl
+cargo scripts build --target x86_64-unknown-linux-musl
 ```
 
 - It will create packages in `dist/` with the version defined in `Cargo.toml`.
@@ -162,7 +162,7 @@ path account fmode dmode
 - Run the `Release` workflow with the next iteration version (e.g. `0.3.0-dev`).
 - It runs the CI, creates the `v0.2.0` tag and a GitHub release with `.deb` and `.rpm` packages for `amd64` and `arm64`.
 - It then opens a PR bumping the version to the next iteration, merge it.
-- The release steps are also available locally through `cargo xtask release:pre`, `cargo xtask release` and `cargo xtask release:post`.
+- The release steps are also available locally through `cargo scripts release:pre`, `cargo scripts release` and `cargo scripts release:post`.
 
 ### How to add a new util
 

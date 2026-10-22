@@ -117,7 +117,7 @@ jobs:
           rm /tmp/nfpm.deb
 
       - name: Build packages
-        run: cargo xtask build --target ${{ matrix.os.target }}
+        run: cargo scripts build --target ${{ matrix.os.target }}
 
       - uses: actions/attest@v4
         with:
