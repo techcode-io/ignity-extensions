@@ -36,6 +36,22 @@
 - Drop-in replacements for the original execlineb scripts
 - Single package replacing `ignity-utils` (`.deb` and `.rpm`)
 
+## :wrench: Configuration
+
+`fix-perms` reads the following environment variables:
+
+| Variable           | Default  | Description                                                     |
+|--------------------|----------|-----------------------------------------------------------------|
+| `USERMAP_UID`      | `0`      | Substituted for `{{USERMAP_UID}}` in spec lines.                |
+| `USERMAP_GID`      | `0`      | Substituted for `{{USERMAP_GID}}` in spec lines.                |
+| `FIX_PERMS_POLICY` | `Always` | `Always` or `OnRootMismatch` (case-insensitive), see below.     |
+
+`FIX_PERMS_POLICY` mirrors Kubernetes' `fsGroupChangePolicy`:
+
+- `Always` walks the whole tree of every spec path.
+- `OnRootMismatch` skips a spec path entirely when its root already has the expected owner and mode, which avoids a full traversal of large trees on every start.
+  Entries below a matching root that have drifted are **not** fixed.
+
 ## :dart: Motivation
 
 - ignity's built-in scripts fork `find`, `xargs`, `chown`, and `chmod` for every path spec.
